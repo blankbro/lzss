@@ -5,7 +5,7 @@
 
 #define MAX_PATH_LENGTH 256
 
-void generate_full_filename(const char *filename, const char *full_filename, size_t full_filename_size) {
+void generate_full_filename(const char *filename, char *full_filename, size_t full_filename_size) {
     // 获取当前源文件的路径
     char currentFilePath[MAX_PATH_LENGTH];
     strcpy(currentFilePath, __FILE__);
