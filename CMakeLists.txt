@@ -3,5 +3,6 @@ project(lzss C)
 
 set(CMAKE_C_STANDARD 11)
 
-add_executable(lzss main.c
-        my_lzss.c)
+add_subdirectory(myimplement)
+add_subdirectory(reference)
+add_subdirectory(test)

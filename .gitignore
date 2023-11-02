@@ -1,4 +1,4 @@
 /cmake-build-debug
-output.txt
-output_output.txt
+test/output.txt
+test/output_output.txt
 /.idea

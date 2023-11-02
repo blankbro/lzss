@@ -118,7 +118,7 @@ void encode(void) {
     }
     flush_bit_buffer();
     printf("text:  %ld bytes\n", textcount);
-    printf("code:  %ld bytes (%ld%%)\n",
+    printf("bytes:  %ld bytes (%ld%%)\n",
            codecount, (codecount * 100) / textcount);
 }
 
