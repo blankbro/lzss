@@ -54,13 +54,13 @@ int main() {
     printf("Hello, World!\n");
 
     char input_full_name[MAX_PATH_LENGTH];
-    generate_full_filename("input.txt", input_full_name, sizeof(input_full_name));
+    generate_full_filename("_input.txt", input_full_name, sizeof(input_full_name));
 
     char output_full_name[MAX_PATH_LENGTH];
-    generate_full_filename("output.txt", output_full_name, sizeof(output_full_name));
+    generate_full_filename("_output.txt", output_full_name, sizeof(output_full_name));
 
     char output_output_full_name[MAX_PATH_LENGTH];
-    generate_full_filename("output_output.txt", output_output_full_name, sizeof(output_output_full_name));
+    generate_full_filename("_output_output.txt", output_output_full_name, sizeof(output_output_full_name));
 
     main_encode(input_full_name, output_full_name);
     main_decode(output_full_name, output_output_full_name);

@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "byte_tool.c"
 
 #define EI 11  /* typically 10..13 */
 #define EJ  4  /* typically 4..5 */
@@ -13,39 +14,38 @@
 #define LOOKAHEAD_BUFFER_SIZE ((1 << EJ) + 1)  /* lookahead buffer size */
 #define SPACE_BUFFER_SIZE (BUFFER_SIZE - LOOKAHEAD_BUFFER_SIZE)  /* space buffer size */
 
-typedef unsigned char byte;
 
 typedef struct EncodeBuffer {
     int bit_buffer;
     int bit_mask;
-    byte *bytes;
+    unsigned char *bytes;
     int bytes_curr_index;
 } EncodeBuffer;
 
-void putbit1(EncodeBuffer encodeBuffer) {
-    encodeBuffer.bit_buffer |= encodeBuffer.bit_mask;
-    if ((encodeBuffer.bit_mask >>= 1) == 0) {
-        encodeBuffer.bytes[encodeBuffer.bytes_curr_index++] = encodeBuffer.bit_buffer;
-        encodeBuffer.bit_buffer = 0;
-        encodeBuffer.bit_mask = 128;
+void putbit1(EncodeBuffer *encodeBuffer) {
+    encodeBuffer->bit_buffer |= encodeBuffer->bit_mask;
+    if ((encodeBuffer->bit_mask >>= 1) == 0) {
+        encodeBuffer->bytes[encodeBuffer->bytes_curr_index++] = encodeBuffer->bit_buffer;
+        encodeBuffer->bit_buffer = 0;
+        encodeBuffer->bit_mask = 128;
     }
 }
 
-void putbit0(EncodeBuffer encodeBuffer) {
-    if ((encodeBuffer.bit_mask >>= 1) == 0) {
-        encodeBuffer.bytes[encodeBuffer.bytes_curr_index++] = encodeBuffer.bit_buffer;
-        encodeBuffer.bit_buffer = 0;
-        encodeBuffer.bit_mask = 128;
+void putbit0(EncodeBuffer *encodeBuffer) {
+    if ((encodeBuffer->bit_mask >>= 1) == 0) {
+        encodeBuffer->bytes[encodeBuffer->bytes_curr_index++] = encodeBuffer->bit_buffer;
+        encodeBuffer->bit_buffer = 0;
+        encodeBuffer->bit_mask = 128;
     }
 }
 
-void flush_bit_buffer(EncodeBuffer encodeBuffer) {
-    if (encodeBuffer.bit_mask != 128) {
-        encodeBuffer.bytes[encodeBuffer.bytes_curr_index++] = encodeBuffer.bit_buffer;
+void flush_bit_buffer(EncodeBuffer *encodeBuffer) {
+    if (encodeBuffer->bit_mask != 128) {
+        encodeBuffer->bytes[encodeBuffer->bytes_curr_index++] = encodeBuffer->bit_buffer;
     }
 }
 
-void output1(EncodeBuffer encodeBuffer, int c) {
+void output1(EncodeBuffer *encodeBuffer, int c) {
     int mask;
 
     putbit1(encodeBuffer);
@@ -59,7 +59,7 @@ void output1(EncodeBuffer encodeBuffer, int c) {
     }
 }
 
-void output2(EncodeBuffer encodeBuffer, int x, int y) {
+void output2(EncodeBuffer *encodeBuffer, int x, int y) {
     int mask;
 
     putbit0(encodeBuffer);
@@ -81,32 +81,24 @@ void output2(EncodeBuffer encodeBuffer, int x, int y) {
     }
 }
 
-size_t getByteArrayLength(const unsigned char *array) {
-    size_t length = 0;
-    while (array[length] != '\0') {
-        length++;
-    }
-    return length;
-}
-
-byte *encode(const byte *origin_bytes) {
-    byte buffer[BUFFER_SIZE * 2];
-    unsigned long text_count = 0;
+void encode(const unsigned char *origin_bytes, int origin_bytes_size, unsigned char *encode_bytes) {
+    unsigned char buffer[BUFFER_SIZE * 2];
+    unsigned long origin_bytes_count = 0;
 
     int buffer_index = 0;
     int origin_bytes_index = 0;
     while (buffer_index < BUFFER_SIZE * 2) {
         if (buffer_index < SPACE_BUFFER_SIZE) {
             buffer[buffer_index++] = ' ';
-        } else if (origin_bytes[origin_bytes_index] != '\0') {
+        } else if (origin_bytes_index < origin_bytes_size) {
             buffer[buffer_index++] = origin_bytes[origin_bytes_index++];
-            text_count++;
+            origin_bytes_count++;
         } else {
             break;
         }
     }
 
-    EncodeBuffer encodeBuffer = {0, 128, malloc(sizeof(byte) * getByteArrayLength(origin_bytes)), 0};
+    EncodeBuffer encodeBuffer = {0, 128, malloc(sizeof(char) * getByteArrayLength(origin_bytes)), 0};
     int buffer_end = buffer_index;
     int r = SPACE_BUFFER_SIZE;
     int s = 0;
@@ -129,9 +121,9 @@ byte *encode(const byte *origin_bytes) {
         }
         if (y <= 1) {
             y = 1;
-            output1(encodeBuffer, c);
+            output1(&encodeBuffer, c);
         } else {
-            output2(encodeBuffer, x & (BUFFER_SIZE - 1), y - 2);
+            output2(&encodeBuffer, x & (BUFFER_SIZE - 1), y - 2);
         }
         r += y;
         s += y;
@@ -141,23 +133,22 @@ byte *encode(const byte *origin_bytes) {
             r -= BUFFER_SIZE;
             s -= BUFFER_SIZE;
             while (buffer_end < BUFFER_SIZE * 2) {
-                if (origin_bytes[origin_bytes_index] == '\0') {
+                if (origin_bytes_index >= origin_bytes_size) {
                     break;
                 }
                 buffer[buffer_end++] = origin_bytes[origin_bytes_index++];
             }
         }
     }
-    flush_bit_buffer(encodeBuffer);
-    printf("text:  %ld bytes\n", text_count);
+    flush_bit_buffer(&encodeBuffer);
+    printf("text:  %ld bytes\n", origin_bytes_count);
     printf("bytes:  %d bytes (%ld%%)\n", encodeBuffer.bytes_curr_index,
-           (encodeBuffer.bytes_curr_index * 100) / text_count);
+           (encodeBuffer.bytes_curr_index * 100) / origin_bytes_count);
 
-    byte *result = malloc(sizeof(byte) * encodeBuffer.bytes_curr_index);
     for (int i = 0; i < encodeBuffer.bytes_curr_index; ++i) {
-        result[i] = encodeBuffer.bytes[i];
+        encode_bytes[i] = encodeBuffer.bytes[i];
     }
-    return result;
+    encode_bytes[encodeBuffer.bytes_curr_index] = '\0';
 }
 
 char *decode(const char *input) {
