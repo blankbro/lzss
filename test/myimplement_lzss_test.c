@@ -15,9 +15,7 @@ void test(const char *hexString) {
         }
         printf("\n字节长度：%zu byte\n", byteArraySize);
 
-        unsigned char *encode_bytes = (unsigned char *) malloc(byteArraySize);
-        encode(byteArray, byteArraySize, encode_bytes);
-        free(encode_bytes);
+        encode(byteArray, byteArraySize);
     } else {
         printf("转换失败\n");
     }

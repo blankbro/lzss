@@ -16,6 +16,11 @@
 
 typedef unsigned char Byte;
 
+typedef struct Result {
+    Byte *bytes;
+    int size;
+} Result;
+
 typedef struct ByteNode {
     Byte byte;
     struct ByteNode *next;
@@ -101,7 +106,7 @@ void output2(EncodeBuffer *encodeBuffer, int x, int y) {
     }
 }
 
-void encode(const Byte *origin_bytes, int origin_bytes_size, Byte *encode_bytes) {
+Result *encode(const Byte *origin_bytes, int origin_bytes_size) {
     Byte buffer[BUFFER_SIZE * 2];
     unsigned long origin_bytes_count = 0;
 
@@ -168,19 +173,29 @@ void encode(const Byte *origin_bytes, int origin_bytes_size, Byte *encode_bytes)
     printf("encode_bytes:  %d bytes (%ld%%)\n", encodeBuffer.byteLinkedSize,
            (encodeBuffer.byteLinkedSize * 100) / origin_bytes_count);
 
+    Result *result = malloc(sizeof(Result));
+    result->bytes = malloc(sizeof(Byte) * encodeBuffer.byteLinkedSize);
+    result->size = encodeBuffer.byteLinkedSize;
+
     ByteNode *current_node = encodeBuffer.byteLinkedHead;
-    for (int i = 0; i < encodeBuffer.byteLinkedSize; ++i) {
-        encode_bytes[i] = current_node->byte;
-        current_node = current_node->next;
+    for (int i = 0; i < encodeBuffer.byteLinkedSize; ++i, current_node = current_node->next) {
+        result->bytes[i] = current_node->byte;
     }
-    encode_bytes[encodeBuffer.byteLinkedSize] = '\0';
+    result->bytes[encodeBuffer.byteLinkedSize] = '\0';
+
+    free(rootNode);
+    return result;
 }
 
 typedef struct DecodeBuffer {
-    int bit_buffer;
-    int bit_mask;
-    Byte *bytes;
-    int bytes_curr_index;
+    Byte bit_buffer;
+    Byte bit_mask;
+    Byte *encode_bytes;
+    int encode_bytes_size;
+    int encode_bytes_curr_index;
+    ByteNode *byteLinkedHead;
+    ByteNode *byteLinkedTail;
+    int byteLinkedSize;
 } DecodeBuffer;
 
 /* get n bits */
@@ -204,8 +219,13 @@ typedef struct DecodeBuffer {
 //
 //     for (int i = 0; i < SPACE_BUFFER_SIZE; i++) buffer[i] = ' ';
 //     int r = SPACE_BUFFER_SIZE;
+//
+//     ByteNode *rootNode = malloc(sizeof(ByteNode));
+//     rootNode->byte = 0;
+//     rootNode->next = NULL;
+//     DecodeBuffer decodeBuffer = {0, 0, rootNode, rootNode, 0};
+//
 //     int c;
-//     DecodeBuffer decodeBuffer = {0,0,};
 //     while ((c = getbit(1)) != EOF) {
 //         if (c) {
 //             if ((c = getbit(8)) == EOF) break;
