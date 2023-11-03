@@ -34,7 +34,7 @@ typedef struct EncodeBuffer {
     int byteLinkedSize;
 } EncodeBuffer;
 
-void appendByteNode(EncodeBuffer *encodeBuffer, ByteNode *byteNode) {
+void appendEncodeByteNode(EncodeBuffer *encodeBuffer, ByteNode *byteNode) {
     encodeBuffer->byteLinkedTail->next = byteNode;
     encodeBuffer->byteLinkedTail = byteNode;
     encodeBuffer->byteLinkedSize++;
@@ -48,7 +48,7 @@ void putbit1(EncodeBuffer *encodeBuffer) {
         ByteNode *newByteLinkedTail = malloc(sizeof(ByteNode));
         newByteLinkedTail->byte = encodeBuffer->bit_buffer;
         newByteLinkedTail->next = NULL;
-        appendByteNode(encodeBuffer, newByteLinkedTail);
+        appendEncodeByteNode(encodeBuffer, newByteLinkedTail);
     }
 }
 
@@ -57,7 +57,7 @@ void putbit0(EncodeBuffer *encodeBuffer) {
         ByteNode *newByteLinkedTail = malloc(sizeof(ByteNode));
         newByteLinkedTail->byte = encodeBuffer->bit_buffer;
         newByteLinkedTail->next = NULL;
-        appendByteNode(encodeBuffer, newByteLinkedTail);
+        appendEncodeByteNode(encodeBuffer, newByteLinkedTail);
     }
 }
 
@@ -66,7 +66,7 @@ void flush_bit_buffer(EncodeBuffer *encodeBuffer) {
         ByteNode *newByteLinkedTail = malloc(sizeof(ByteNode));
         newByteLinkedTail->byte = encodeBuffer->bit_buffer;
         newByteLinkedTail->next = NULL;
-        appendByteNode(encodeBuffer, newByteLinkedTail);
+        appendEncodeByteNode(encodeBuffer, newByteLinkedTail);
     }
 }
 
@@ -177,8 +177,8 @@ Result *encode(const Byte *origin_bytes, int origin_bytes_size) {
     result->bytes = malloc(sizeof(Byte) * encodeBuffer.byteLinkedSize);
     result->size = encodeBuffer.byteLinkedSize;
 
-    ByteNode *current_node = encodeBuffer.byteLinkedHead;
-    for (int i = 0; i < encodeBuffer.byteLinkedSize; ++i, current_node = current_node->next) {
+    ByteNode *current_node = encodeBuffer.byteLinkedHead->next;
+    for (int i = 0; i < encodeBuffer.byteLinkedSize && current_node != NULL; ++i, current_node = current_node->next) {
         result->bytes[i] = current_node->byte;
     }
     result->bytes[encodeBuffer.byteLinkedSize] = '\0';
@@ -199,49 +199,73 @@ typedef struct DecodeBuffer {
 } DecodeBuffer;
 
 /* get n bits */
-// int getbit(int n) {
-//     static int buf, mask = 0;
-//     int x = 0;
-//     for (int i = 0; i < n; i++) {
-//         if (mask == 0) {
-//             if ((buf = fgetc(infile)) == EOF) return EOF;
-//             mask = 128;
-//         }
-//         x <<= 1;
-//         if (buf & mask) x++;
-//         mask >>= 1;
-//     }
-//     return x;
-// }
-//
-// void decode(Byte *encode_bytes, int encode_bytes_size, const Byte *origin_bytes) {
-//     Byte buffer[BUFFER_SIZE * 2];
-//
-//     for (int i = 0; i < SPACE_BUFFER_SIZE; i++) buffer[i] = ' ';
-//     int r = SPACE_BUFFER_SIZE;
-//
-//     ByteNode *rootNode = malloc(sizeof(ByteNode));
-//     rootNode->byte = 0;
-//     rootNode->next = NULL;
-//     DecodeBuffer decodeBuffer = {0, 0, rootNode, rootNode, 0};
-//
-//     int c;
-//     while ((c = getbit(1)) != EOF) {
-//         if (c) {
-//             if ((c = getbit(8)) == EOF) break;
-//             fputc(c, outfile);
-//             buffer[r++] = c;
-//             r &= (BUFFER_SIZE - 1);
-//         } else {
-//             int i, j, k;
-//             if ((i = getbit(EI)) == EOF) break;
-//             if ((j = getbit(EJ)) == EOF) break;
-//             for (k = 0; k <= j + 1; k++) {
-//                 c = buffer[(i + k) & (BUFFER_SIZE - 1)];
-//                 fputc(c, outfile);
-//                 buffer[r++] = c;
-//                 r &= (BUFFER_SIZE - 1);
-//             }
-//         }
-//     }
-// }
+int getbit(DecodeBuffer *decodeBuffer, int n) {
+    int x = 0;
+    for (int i = 0; i < n; i++) {
+        if (decodeBuffer->bit_mask == 0) {
+            if (decodeBuffer->encode_bytes_curr_index >= decodeBuffer->encode_bytes_size) {
+                return EOF;
+            }
+            decodeBuffer->bit_buffer = decodeBuffer->encode_bytes[decodeBuffer->encode_bytes_curr_index++];
+            decodeBuffer->bit_mask = 128;
+        }
+        x <<= 1;
+        if (decodeBuffer->bit_buffer & decodeBuffer->bit_mask) x++;
+        decodeBuffer->bit_mask >>= 1;
+    }
+    return x;
+}
+
+void appendDecodeByte(DecodeBuffer *decodeBuffer, Byte byte) {
+    ByteNode *byteNode = malloc(sizeof(ByteNode));
+    byteNode->byte = byte;
+    byteNode->next = NULL;
+    decodeBuffer->byteLinkedTail->next = byteNode;
+    decodeBuffer->byteLinkedTail = byteNode;
+    decodeBuffer->byteLinkedSize++;
+}
+
+Result *decode(Byte *encode_bytes, int encode_bytes_size) {
+    Byte buffer[BUFFER_SIZE * 2];
+
+    for (int i = 0; i < SPACE_BUFFER_SIZE; i++) buffer[i] = ' ';
+    int r = SPACE_BUFFER_SIZE;
+
+    ByteNode *rootNode = malloc(sizeof(ByteNode));
+    rootNode->byte = 0;
+    rootNode->next = NULL;
+    DecodeBuffer decodeBuffer = {0, 0, encode_bytes, encode_bytes_size, 0, rootNode, rootNode, 0};
+
+    int c;
+    while ((c = getbit(&decodeBuffer, 1)) != EOF) {
+        if (c) {
+            if ((c = getbit(&decodeBuffer, 8)) == EOF) break;
+            appendDecodeByte(&decodeBuffer, c);
+            buffer[r++] = c;
+            r &= (BUFFER_SIZE - 1);
+        } else {
+            int i, j, k;
+            if ((i = getbit(&decodeBuffer, EI)) == EOF) break;
+            if ((j = getbit(&decodeBuffer, EJ)) == EOF) break;
+            for (k = 0; k <= j + 1; k++) {
+                c = buffer[(i + k) & (BUFFER_SIZE - 1)];
+                appendDecodeByte(&decodeBuffer, c);
+                buffer[r++] = c;
+                r &= (BUFFER_SIZE - 1);
+            }
+        }
+    }
+
+    Result *result = malloc(sizeof(Result));
+    result->bytes = malloc(sizeof(Byte) * decodeBuffer.byteLinkedSize);
+    result->size = decodeBuffer.byteLinkedSize;
+
+    ByteNode *current_node = decodeBuffer.byteLinkedHead->next;
+    for (int i = 0; i < decodeBuffer.byteLinkedSize && current_node != NULL; ++i, current_node = current_node->next) {
+        result->bytes[i] = current_node->byte;
+    }
+    result->bytes[decodeBuffer.byteLinkedSize] = '\0';
+
+    free(rootNode);
+    return result;
+}

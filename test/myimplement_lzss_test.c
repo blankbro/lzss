@@ -15,7 +15,14 @@ void test(const char *hexString) {
         }
         printf("\n字节长度：%zu byte\n", byteArraySize);
 
-        encode(byteArray, byteArraySize);
+        Result *encodeResult = encode(byteArray, byteArraySize);
+        Result *decodeResult = decode(encodeResult->bytes, encodeResult->size);
+
+        if (strcmp(byteArray, decodeResult->bytes) == 0) {
+            printf("解压后一致\n");
+        }else{
+            printf("解压后不一致\n");
+        }
     } else {
         printf("转换失败\n");
     }
