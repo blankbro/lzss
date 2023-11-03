@@ -5,6 +5,7 @@
 #include "../myimplement/lzss.c"
 
 void test(const char *hexString) {
+    // hexString -> byteArray
     printf("\nhexString -> byteArray: ");
     ByteArray *byteArray = hexStringToByteArray(hexString);
     for (size_t i = 0; i < byteArray->size; i++) {
@@ -12,8 +13,10 @@ void test(const char *hexString) {
     }
     printf("\nbyteArray size：%d byte", byteArray->size);
 
+    // encode
     ByteArray *encodeResult = encode(byteArray);
 
+    // decode
     ByteArray *decodeResult = decode(encodeResult);
     if (strcmp(byteArray->bytes, decodeResult->bytes) == 0) {
         printf("\n解压后一致");

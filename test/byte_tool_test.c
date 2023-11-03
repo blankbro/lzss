@@ -5,23 +5,13 @@
 #include "../myimplement/byte_tool.c"
 
 int main() {
-    const char *hexString = "0123456789ABCDEF00";
-    size_t byteArraySize = strlen(hexString) / 2;
-    unsigned char *byteArray = (unsigned char *) malloc(byteArraySize);
-
-    if (hexStringToByteArray(hexString, byteArray, byteArraySize) == EXIT_FAILURE) {
-        printf("转换失败\n");
-
-        free(byteArray);
-        return EXIT_FAILURE;
+    printf("\nhexString -> byteArray: ");
+    ByteArray *byteArray = hexStringToByteArray("0123456789ABCDEF00");
+    for (size_t i = 0; i < byteArray->size; i++) {
+        printf("%02X ", byteArray->bytes[i]);
     }
+    printf("\nbyteArray size：%d byte", byteArray->size);
 
-    printf("转换成功：");
-    for (size_t i = 0; i < byteArraySize; i++) {
-        printf("%02X ", byteArray[i]);
-    }
-    printf("\n字节长度：%d byte\n", byteArraySize);
-
-    free(byteArray);
+    freeByteArray(byteArray);
     return EXIT_SUCCESS;
 }
