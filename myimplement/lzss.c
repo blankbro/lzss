@@ -14,34 +14,54 @@
 #define LOOKAHEAD_BUFFER_SIZE ((1 << EJ) + 1)  /* lookahead buffer size */
 #define SPACE_BUFFER_SIZE (BUFFER_SIZE - LOOKAHEAD_BUFFER_SIZE)  /* space buffer size */
 
+typedef unsigned char Byte;
+
+typedef struct ByteNode {
+    Byte byte;
+    struct ByteNode *next;
+} ByteNode;
 
 typedef struct EncodeBuffer {
-    int bit_buffer;
-    int bit_mask;
-    unsigned char *bytes;
-    int bytes_curr_index;
+    Byte bit_buffer;
+    Byte bit_mask;
+    ByteNode *byteLinkedHead;
+    ByteNode *byteLinkedTail;
+    int byteLinkedSize;
 } EncodeBuffer;
+
+void appendByteNode(EncodeBuffer *encodeBuffer, ByteNode *byteNode) {
+    encodeBuffer->byteLinkedTail->next = byteNode;
+    encodeBuffer->byteLinkedTail = byteNode;
+    encodeBuffer->byteLinkedSize++;
+    encodeBuffer->bit_buffer = 0;
+    encodeBuffer->bit_mask = 128;
+}
 
 void putbit1(EncodeBuffer *encodeBuffer) {
     encodeBuffer->bit_buffer |= encodeBuffer->bit_mask;
     if ((encodeBuffer->bit_mask >>= 1) == 0) {
-        encodeBuffer->bytes[encodeBuffer->bytes_curr_index++] = encodeBuffer->bit_buffer;
-        encodeBuffer->bit_buffer = 0;
-        encodeBuffer->bit_mask = 128;
+        ByteNode *newByteLinkedTail = malloc(sizeof(ByteNode));
+        newByteLinkedTail->byte = encodeBuffer->bit_buffer;
+        newByteLinkedTail->next = NULL;
+        appendByteNode(encodeBuffer, newByteLinkedTail);
     }
 }
 
 void putbit0(EncodeBuffer *encodeBuffer) {
     if ((encodeBuffer->bit_mask >>= 1) == 0) {
-        encodeBuffer->bytes[encodeBuffer->bytes_curr_index++] = encodeBuffer->bit_buffer;
-        encodeBuffer->bit_buffer = 0;
-        encodeBuffer->bit_mask = 128;
+        ByteNode *newByteLinkedTail = malloc(sizeof(ByteNode));
+        newByteLinkedTail->byte = encodeBuffer->bit_buffer;
+        newByteLinkedTail->next = NULL;
+        appendByteNode(encodeBuffer, newByteLinkedTail);
     }
 }
 
 void flush_bit_buffer(EncodeBuffer *encodeBuffer) {
     if (encodeBuffer->bit_mask != 128) {
-        encodeBuffer->bytes[encodeBuffer->bytes_curr_index++] = encodeBuffer->bit_buffer;
+        ByteNode *newByteLinkedTail = malloc(sizeof(ByteNode));
+        newByteLinkedTail->byte = encodeBuffer->bit_buffer;
+        newByteLinkedTail->next = NULL;
+        appendByteNode(encodeBuffer, newByteLinkedTail);
     }
 }
 
@@ -81,8 +101,8 @@ void output2(EncodeBuffer *encodeBuffer, int x, int y) {
     }
 }
 
-void encode(const unsigned char *origin_bytes, int origin_bytes_size, unsigned char *encode_bytes) {
-    unsigned char buffer[BUFFER_SIZE * 2];
+void encode(const Byte *origin_bytes, int origin_bytes_size, Byte *encode_bytes) {
+    Byte buffer[BUFFER_SIZE * 2];
     unsigned long origin_bytes_count = 0;
 
     int buffer_index = 0;
@@ -98,7 +118,10 @@ void encode(const unsigned char *origin_bytes, int origin_bytes_size, unsigned c
         }
     }
 
-    EncodeBuffer encodeBuffer = {0, 128, malloc(sizeof(char) * getByteArrayLength(origin_bytes)), 0};
+    ByteNode *rootNode = malloc(sizeof(ByteNode));
+    rootNode->byte = 0;
+    rootNode->next = NULL;
+    EncodeBuffer encodeBuffer = {0, 128, rootNode, rootNode, 0};
     int buffer_end = buffer_index;
     int r = SPACE_BUFFER_SIZE;
     int s = 0;
@@ -141,16 +164,64 @@ void encode(const unsigned char *origin_bytes, int origin_bytes_size, unsigned c
         }
     }
     flush_bit_buffer(&encodeBuffer);
-    printf("text:  %ld bytes\n", origin_bytes_count);
-    printf("bytes:  %d bytes (%ld%%)\n", encodeBuffer.bytes_curr_index,
-           (encodeBuffer.bytes_curr_index * 100) / origin_bytes_count);
+    printf("origin_bytes:  %ld bytes\n", origin_bytes_count);
+    printf("encode_bytes:  %d bytes (%ld%%)\n", encodeBuffer.byteLinkedSize,
+           (encodeBuffer.byteLinkedSize * 100) / origin_bytes_count);
 
-    for (int i = 0; i < encodeBuffer.bytes_curr_index; ++i) {
-        encode_bytes[i] = encodeBuffer.bytes[i];
+    ByteNode *current_node = encodeBuffer.byteLinkedHead;
+    for (int i = 0; i < encodeBuffer.byteLinkedSize; ++i) {
+        encode_bytes[i] = current_node->byte;
+        current_node = current_node->next;
     }
-    encode_bytes[encodeBuffer.bytes_curr_index] = '\0';
+    encode_bytes[encodeBuffer.byteLinkedSize] = '\0';
 }
 
-char *decode(const char *input) {
-    return "";
-}
+typedef struct DecodeBuffer {
+    int bit_buffer;
+    int bit_mask;
+    Byte *bytes;
+    int bytes_curr_index;
+} DecodeBuffer;
+
+/* get n bits */
+// int getbit(int n) {
+//     static int buf, mask = 0;
+//     int x = 0;
+//     for (int i = 0; i < n; i++) {
+//         if (mask == 0) {
+//             if ((buf = fgetc(infile)) == EOF) return EOF;
+//             mask = 128;
+//         }
+//         x <<= 1;
+//         if (buf & mask) x++;
+//         mask >>= 1;
+//     }
+//     return x;
+// }
+//
+// void decode(Byte *encode_bytes, int encode_bytes_size, const Byte *origin_bytes) {
+//     Byte buffer[BUFFER_SIZE * 2];
+//
+//     for (int i = 0; i < SPACE_BUFFER_SIZE; i++) buffer[i] = ' ';
+//     int r = SPACE_BUFFER_SIZE;
+//     int c;
+//     DecodeBuffer decodeBuffer = {0,0,};
+//     while ((c = getbit(1)) != EOF) {
+//         if (c) {
+//             if ((c = getbit(8)) == EOF) break;
+//             fputc(c, outfile);
+//             buffer[r++] = c;
+//             r &= (BUFFER_SIZE - 1);
+//         } else {
+//             int i, j, k;
+//             if ((i = getbit(EI)) == EOF) break;
+//             if ((j = getbit(EJ)) == EOF) break;
+//             for (k = 0; k <= j + 1; k++) {
+//                 c = buffer[(i + k) & (BUFFER_SIZE - 1)];
+//                 fputc(c, outfile);
+//                 buffer[r++] = c;
+//                 r &= (BUFFER_SIZE - 1);
+//             }
+//         }
+//     }
+// }
