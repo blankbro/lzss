@@ -5,30 +5,26 @@
 #include "../myimplement/lzss.c"
 
 void test(const char *hexString) {
-    size_t byteArraySize = strlen(hexString) / 2;
-    unsigned char *byteArray = (unsigned char *) malloc(byteArraySize);
+    printf("\nhexString -> byteArray: ");
+    ByteArray *byteArray = hexStringToByteArray(hexString);
+    for (size_t i = 0; i < byteArray->size; i++) {
+        printf("%02X ", byteArray->bytes[i]);
+    }
+    printf("\nbyteArray size：%d byte", byteArray->size);
 
-    if (hexStringToByteArray(hexString, byteArray, byteArraySize) == EXIT_SUCCESS) {
-        printf("转换成功：");
-        for (size_t i = 0; i < byteArraySize; i++) {
-            printf("%02X ", byteArray[i]);
-        }
-        printf("\n字节长度：%zu byte\n", byteArraySize);
+    ByteArray *encodeResult = encode(byteArray);
 
-        Result *encodeResult = encode(byteArray, byteArraySize);
-        Result *decodeResult = decode(encodeResult->bytes, encodeResult->size);
-
-        if (strcmp(byteArray, decodeResult->bytes) == 0) {
-            printf("解压后一致\n");
-        }else{
-            printf("解压后不一致\n");
-        }
+    ByteArray *decodeResult = decode(encodeResult);
+    if (strcmp(byteArray->bytes, decodeResult->bytes) == 0) {
+        printf("\n解压后一致");
     } else {
-        printf("转换失败\n");
+        printf("\n解压后不一致");
     }
 
-    free(byteArray);
-    printf("=============================================\n");
+    freeByteArray(byteArray);
+    freeByteArray(encodeResult);
+    freeByteArray(decodeResult);
+    printf("\n=============================================");
 }
 
 int main() {

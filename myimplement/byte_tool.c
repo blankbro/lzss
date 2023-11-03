@@ -5,6 +5,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef unsigned char Byte;
+
+typedef struct ByteArray {
+    Byte *bytes;
+    int size;
+} ByteArray;
+
 int hexCharToInt(char c) {
     if (c >= '0' && c <= '9')
         return c - '0';
@@ -12,32 +19,38 @@ int hexCharToInt(char c) {
         return c - 'A' + 10;
     else if (c >= 'a' && c <= 'f')
         return c - 'a' + 10;
-    else
-        return -1; // 非法字符
+    else {
+        printf("非法十六进制字符: %c", c);
+        return -1;
+    }
 }
 
-int hexStringToByteArray(const char *hexString, unsigned char *byteArray, size_t byteArraySize) {
+ByteArray *hexStringToByteArray(const char *hexString) {
     size_t hexLen = strlen(hexString);
-    if (hexLen % 2 != 0 || hexLen / 2 > byteArraySize)
-        return EXIT_FAILURE; // 非法十六进制字符串或字节数组容量不足
+    if (hexLen % 2 != 0) {
+        printf("非法十六进制字符串或字节数组容量不足");
+        exit(EXIT_FAILURE);
+    }
 
+    unsigned char *bytes = malloc(sizeof(char) * hexLen / 2);
     for (size_t i = 0; i < hexLen / 2; i++) {
         int highNibble = hexCharToInt(hexString[i * 2]);
         int lowNibble = hexCharToInt(hexString[i * 2 + 1]);
 
         if (highNibble == -1 || lowNibble == -1)
-            return EXIT_FAILURE; // 非法十六进制字符
+            exit(EXIT_FAILURE);
 
-        byteArray[i] = (highNibble << 4) | lowNibble;
+        bytes[i] = (highNibble << 4) | lowNibble;
     }
 
-    return EXIT_SUCCESS; // 转换成功
+    ByteArray *byteArray = malloc(sizeof(ByteArray));
+    byteArray->bytes = bytes;
+    byteArray->size = hexLen / 2;
+
+    return byteArray;
 }
 
-size_t getByteArrayLength(const unsigned char *array) {
-    size_t length = 0;
-    while (array[length] != '\0') {
-        length++;
-    }
-    return length;
+void freeByteArray(ByteArray *byteArray) {
+    free(byteArray->bytes);
+    free(byteArray);
 }
