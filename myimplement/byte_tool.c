@@ -20,7 +20,7 @@ int hexCharToInt(char c) {
     else if (c >= 'a' && c <= 'f')
         return c - 'a' + 10;
     else {
-        printf("非法十六进制字符: %c", c);
+        printf("\n非法十六进制字符: %c", c);
         return -1;
     }
 }
@@ -48,6 +48,31 @@ ByteArray *hexStringToByteArray(const char *hexString) {
     byteArray->size = hexLen / 2;
 
     return byteArray;
+}
+
+char intToHexChar(int i) {
+    if (i >= 0 && i <= 9) {
+        return (char) ('0' + i);
+    } else if (i >= 10 && i <= 15) {
+        return (char) ('A' + i - 10);
+    } else {
+        printf("\n非法十进制数字: %d, 无法转成十六进制", i);
+        return '?';
+    }
+}
+
+char *byteArrayToHexString(ByteArray *byteArray) {
+    int stringLength = sizeof(char) * byteArray->size * 2 + 1;
+    char *hexString = malloc(stringLength);
+    for (int i = 0; i < byteArray->size; ++i) {
+        Byte byte = byteArray->bytes[i];
+        char c1 = intToHexChar(byte >> 4);
+        char c2 = intToHexChar(byte & 0x0F);
+        hexString[i * 2] = c1;
+        hexString[i * 2 + 1] = c2;
+    }
+    hexString[stringLength - 1] = '\0';
+    return hexString;
 }
 
 void freeByteArray(ByteArray *byteArray) {
