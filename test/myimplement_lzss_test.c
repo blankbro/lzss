@@ -23,7 +23,7 @@ void testCompression(const char *hexString) {
     printf("\nhexString: ");
     ByteArray *byteArray = hexStringToByteArray(hexString);
     for (size_t i = 0; i < byteArray->size; i++) {
-        printf("%X", byteArray->bytes[i]);
+        printf("%02X ", byteArray->bytes[i]);
     }
     printByteArray("byteArray: ", byteArray);
     printf("\nbyteArray size：%d byte", byteArray->size);
@@ -218,5 +218,7 @@ void generateBinaryFile() {
 
 int main() {
     // testCompressionAllCase();
+    testCompression("00018BB1BAAC");
+    testCompression("0000000000018BB1BAAC");
     return EXIT_SUCCESS;
 }
