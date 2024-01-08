@@ -2,4 +2,5 @@
 test/_internal.txt
 test/_output.txt
 test/_output_output.txt
-/.idea
+/**/.idea
+/**/target

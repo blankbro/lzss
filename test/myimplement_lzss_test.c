@@ -217,8 +217,8 @@ void generateBinaryFile() {
 }
 
 int main() {
-    // testCompressionAllCase();
-    testCompression("00018BB1BAAC");
-    testCompression("0000000000018BB1BAAC");
+    testCompressionAllCase();
+    // testCompression("00018BB1BAAC");
+    // testCompression("0000000000018BB1BAAC");
     return EXIT_SUCCESS;
 }
