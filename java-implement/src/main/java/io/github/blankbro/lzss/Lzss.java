@@ -139,8 +139,6 @@ public class Lzss {
         }
 
         encodeBuffer.flushBitBuffer();
-        log.info("originByteArray:  {} bytes", originByteArray.length);
-        log.info("encodeByteArray:  {} bytes ({}%)", encodeBuffer.encodeByteList.size(), encodeBuffer.encodeByteList.size() * 100.0 / originByteArray.length);
 
         byte[] result = new byte[encodeBuffer.encodeByteList.size()];
         for (int i = 0; i < encodeBuffer.encodeByteList.size(); i++) {
