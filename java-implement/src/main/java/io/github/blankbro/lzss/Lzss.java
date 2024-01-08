@@ -14,31 +14,31 @@ public class Lzss {
     private static final int LOOKAHEAD_BUFFER_SIZE = ((1 << EJ) + 1);  // lookahead buffer size
     private static final int SPACE_BUFFER_SIZE = BUFFER_SIZE - LOOKAHEAD_BUFFER_SIZE;  // space buffer size
 
-    public static class EncodeBuffer {
-        public static final int INIT_BIT_BUFFER = 0;
-        public static final int INIT_BIT_MASK = 1 << 7;
-        int bitBuffer = INIT_BIT_BUFFER;
-        int bitMask = INIT_BIT_MASK;
-        List<Byte> byteList = new ArrayList<>();
+    private static class EncodeBuffer {
+        static final int INIT_BIT_BUFFER = 0;
+        static final int INIT_BIT_MASK = 1 << 7;
+        private int bitBuffer = INIT_BIT_BUFFER;
+        private int bitMask = INIT_BIT_MASK;
+        private List<Byte> encodeByteList = new ArrayList<>();
 
-        void putBit1() {
+        private void putBit1() {
             this.bitBuffer |= this.bitMask;
             if ((this.bitMask >>= 1) == 0) {
-                this.byteList.add((byte) this.bitBuffer);
+                this.encodeByteList.add((byte) this.bitBuffer);
                 this.bitBuffer = INIT_BIT_BUFFER;
                 this.bitMask = INIT_BIT_MASK;
             }
         }
 
-        void putBit0() {
+        private void putBit0() {
             if ((this.bitMask >>= 1) == 0) {
-                this.byteList.add((byte) this.bitBuffer);
+                this.encodeByteList.add((byte) this.bitBuffer);
                 this.bitBuffer = INIT_BIT_BUFFER;
                 this.bitMask = INIT_BIT_MASK;
             }
         }
 
-        void output1(int c) {
+        private void output1(int c) {
             this.putBit1();
             int mask = 256;
             while ((mask >>= 1) != 0) {
@@ -50,7 +50,7 @@ public class Lzss {
             }
         }
 
-        void output2(int x, int y) {
+        private void output2(int x, int y) {
             int mask;
 
             this.putBit0();
@@ -72,9 +72,9 @@ public class Lzss {
             }
         }
 
-        void flushBitBuffer() {
+        private void flushBitBuffer() {
             if (this.bitMask != INIT_BIT_MASK) {
-                this.byteList.add((byte) this.bitBuffer);
+                this.encodeByteList.add((byte) this.bitBuffer);
                 this.bitBuffer = INIT_BIT_BUFFER;
                 this.bitMask = INIT_BIT_MASK;
             }
@@ -140,17 +140,89 @@ public class Lzss {
 
         encodeBuffer.flushBitBuffer();
         log.info("originByteArray:  {} bytes", originByteArray.length);
-        log.info("encodeByteArray:  {} bytes ({}%)", encodeBuffer.byteList.size(), encodeBuffer.byteList.size() * 100.0 / originByteArray.length);
+        log.info("encodeByteArray:  {} bytes ({}%)", encodeBuffer.encodeByteList.size(), encodeBuffer.encodeByteList.size() * 100.0 / originByteArray.length);
 
-        byte[] result = new byte[encodeBuffer.byteList.size()];
-        for (int i = 0; i < encodeBuffer.byteList.size(); i++) {
-            result[i] = encodeBuffer.byteList.get(i);
+        byte[] result = new byte[encodeBuffer.encodeByteList.size()];
+        for (int i = 0; i < encodeBuffer.encodeByteList.size(); i++) {
+            result[i] = encodeBuffer.encodeByteList.get(i);
         }
         return result;
     }
 
-    public static byte[] decode(byte[] bytes) {
-        return null;
+    private static class DecodeBuffer {
+        private static final int EOF = -1;
+        private static final int INIT_BIT_MASK = 1 << 7;
+        private int bitBuffer;
+        private int bitMask;
+        private byte[] encodeBytes;
+        private int encodeBytesCurrIndex;
+        private List<Byte> decodeByteList;
+
+        public DecodeBuffer(byte[] encodeBytes) {
+            this.encodeBytes = encodeBytes;
+            this.encodeBytesCurrIndex = 0;
+            this.bitBuffer = this.encodeBytes[this.encodeBytesCurrIndex++];
+            this.bitMask = INIT_BIT_MASK;
+            this.decodeByteList = new ArrayList<>();
+        }
+
+        /* get n bits */
+        private int getbit(int n) {
+            int x = 0;
+            for (int i = 0; i < n; i++) {
+                if (this.bitMask == 0) {
+                    if (this.encodeBytesCurrIndex >= this.encodeBytes.length) {
+                        return EOF;
+                    }
+                    this.bitBuffer = this.encodeBytes[this.encodeBytesCurrIndex++];
+                    this.bitMask = INIT_BIT_MASK;
+                }
+                x <<= 1;
+                if ((this.bitBuffer & this.bitMask) != 0) x++;
+                this.bitMask >>= 1;
+            }
+            return x;
+        }
+
+        private void appendDecodeByte(byte b) {
+            this.decodeByteList.add(b);
+        }
+    }
+
+    public static byte[] decode(byte[] encodeByteArray) {
+        byte[] buffer = new byte[BUFFER_SIZE * 2];
+
+        for (int i = 0; i < SPACE_BUFFER_SIZE; i++) buffer[i] = ' ';
+        int r = SPACE_BUFFER_SIZE;
+
+        DecodeBuffer decodeBuffer = new DecodeBuffer(encodeByteArray);
+
+        int c;
+        while ((c = decodeBuffer.getbit(1)) != DecodeBuffer.EOF) {
+            if (c != 0) {
+                if ((c = decodeBuffer.getbit(8)) == DecodeBuffer.EOF) break;
+                decodeBuffer.appendDecodeByte((byte) c);
+                buffer[r++] = (byte) c;
+                r &= (BUFFER_SIZE - 1);
+            } else {
+                int i, j, k;
+                if ((i = decodeBuffer.getbit(EI)) == DecodeBuffer.EOF) break;
+                if ((j = decodeBuffer.getbit(EJ)) == DecodeBuffer.EOF) break;
+                for (k = 0; k <= j + 1; k++) {
+                    c = buffer[(i + k) & (BUFFER_SIZE - 1)];
+                    decodeBuffer.appendDecodeByte((byte) c);
+                    buffer[r++] = (byte) c;
+                    r &= (BUFFER_SIZE - 1);
+                }
+            }
+        }
+
+        byte[] result = new byte[decodeBuffer.decodeByteList.size()];
+        for (int i = 0; i < decodeBuffer.decodeByteList.size(); i++) {
+            result[i] = decodeBuffer.decodeByteList.get(i);
+        }
+
+        return result;
     }
 
 }

@@ -14,5 +14,12 @@ public class LzssTest {
             // System.out.println(Integer.toHexString(byteArr[i] & 0xFF));
         }
         byte[] encode = Lzss.encode(byteArr);
+        byte[] decode = Lzss.decode(encode);
+        for (int i = 0; i < decode.length; i++) {
+            if(decode[i] != byteArr[i]){
+                System.out.println("解压不一致");
+                break;
+            }
+        }
     }
 }
