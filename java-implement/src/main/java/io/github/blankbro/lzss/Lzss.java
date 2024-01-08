@@ -7,8 +7,8 @@ import java.util.List;
 
 @Slf4j
 public class Lzss {
-    private static final int EI = 11; // typically 10..13
-    private static final int EJ = 4;  // typically 4..5
+    private static final int EI = 6; // typically 10..13
+    private static final int EJ = 3;  // typically 4..5
     private static final int P = 1;   // If match length <= P then output one character
     private static final int BUFFER_SIZE = (1 << EI);  // buffer size
     private static final int LOOKAHEAD_BUFFER_SIZE = ((1 << EJ) + 1);  // lookahead buffer size
