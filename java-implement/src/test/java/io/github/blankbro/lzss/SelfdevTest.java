@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 
 import java.time.Duration;
+import java.util.Arrays;
 
 @Slf4j
 public class SelfdevTest {
@@ -25,16 +26,22 @@ public class SelfdevTest {
             byteArr[i] = (byte) intArr[i];
         }
 
-        for (int i = 0; i < 10000; i++) {
+        long encodeTotalTime = 0;
+        long decodeTotalTime = 0;
+        long totalCount = 10;
+
+        for (int i = 0; i < totalCount; i++) {
             long start = System.nanoTime();
-            Selfdev.EncodeResult encodeResult = Selfdev.encode(byteArr, 10);
+            Selfdev.EncodeResult encodeResult = Selfdev.encode(byteArr, intArr.length/51);
             long end = System.nanoTime();
             long encodeHandleTime = end - start;
+            encodeTotalTime += encodeHandleTime;
 
             start = System.nanoTime();
             byte[] decodeResult = Selfdev.decode(encodeResult);
             end = System.nanoTime();
             long decodeHandleTime = end - start;
+            decodeTotalTime += decodeHandleTime;
 
             for (int j = 0; j < decodeResult.length; j++) {
                 if (byteArr[j] != decodeResult[j]) {
@@ -44,6 +51,7 @@ public class SelfdevTest {
             }
 
             byte[] encodeBytes = encodeResult.getBytes();
+            log.info("=========>>>");
             log.info("originByteArray:  {} bytes", byteArr.length);
             log.info("encodeByteArray:  {} bytes ({}%)", encodeBytes.length, encodeBytes.length * 100.0 / byteArr.length);
             log.info("encodeByteArray + 2 + 2:  {} bytes ({}%)", encodeBytes.length + 4, (encodeBytes.length + 4) * 100.0 / byteArr.length);
@@ -53,6 +61,8 @@ public class SelfdevTest {
             Thread.sleep(1000);
         }
 
+        log.info("最终结果 压缩 {} 次，平均耗时：{}", totalCount, TimeUtil.formatDuration(Duration.ofNanos(encodeTotalTime / totalCount)));
+        log.info("最终结果 解压 {} 次，平均耗时：{}", totalCount, TimeUtil.formatDuration(Duration.ofNanos(decodeTotalTime / totalCount)));
 
     }
 
@@ -66,5 +76,10 @@ public class SelfdevTest {
 
         byte b = -1;
         System.out.println((int) b);
+
+        System.out.println(Integer.toBinaryString(Integer.MAX_VALUE));
+
+        System.out.println(Arrays.toString(ByteUtil.intToByteArray(Integer.MAX_VALUE, 4)));
+        System.out.println(Arrays.toString(ByteUtil.intToByteArray(5, 2)));
     }
 }

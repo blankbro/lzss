@@ -133,4 +133,5 @@ public class Selfdev {
         // log.info("{}/{} = {}%", encodeBytes.length + 2 + 2, originByteArray.length, (encodeBytes.length + 2 + 2) * 100.0 / originByteArray.length);
         return encodeResult;
     }
+
 }
