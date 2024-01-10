@@ -12,36 +12,6 @@ import java.util.Random;
 @Slf4j
 public class LzssTest {
 
-    private static String formatDuration(Duration duration) {
-        long days = duration.toDays();
-        long hours = duration.toHours() % 24;
-        long minutes = duration.toMinutes() % 60;
-        long seconds = duration.getSeconds() % 60;
-        long millis = duration.toMillis() % 1000;
-        long micros = duration.toNanos() / 1_000 % 1_000;
-
-        StringBuilder sb = new StringBuilder();
-        if (days > 0) {
-            sb.append(" ").append(days).append("d");
-        }
-        if (hours > 0) {
-            sb.append(" ").append(hours).append("h");
-        }
-        if (minutes > 0) {
-            sb.append(" ").append(minutes).append("m");
-        }
-        if (seconds > 0) {
-            sb.append(" ").append(seconds).append("s");
-        }
-        if (millis > 0) {
-            sb.append(" ").append(millis).append("ms");
-        }
-        if (micros > 0) {
-            sb.append(" ").append(micros).append("μs");
-        }
-        return sb.toString();
-    }
-
     @Test
     public void test202401081731() throws IOException, InterruptedException {
         Map<String, Integer[]> caseList = new LinkedHashMap<>();
@@ -93,15 +63,15 @@ public class LzssTest {
 
                 log.info("originByteArray:  {} bytes", byteArr.length);
                 log.info("encodeByteArray:  {} bytes ({}%)", encodeBytes.length, encodeBytes.length * 100.0 / byteArr.length);
-                log.info("压缩耗时：{}", formatDuration(Duration.ofNanos(encodeHandleTime)));
-                log.info("解压耗时：{}", formatDuration(Duration.ofNanos(decodeHandleTime)));
+                log.info("压缩耗时：{}", TimeUtil.formatDuration(Duration.ofNanos(encodeHandleTime)));
+                log.info("解压耗时：{}", TimeUtil.formatDuration(Duration.ofNanos(decodeHandleTime)));
             }
 
             // 742μs 483μs, 301μs 137μs
             // 745μs 586μs, 293μs 142μs
             // 708μs 376μs, 306μs 119μs
-            log.info("最终结果 压缩 {} 次，平均耗时：{}", totalCount, formatDuration(Duration.ofNanos(encodeTotalTime / totalCount)));
-            log.info("最终结果 解压 {} 次，平均耗时：{}", totalCount, formatDuration(Duration.ofNanos(decodeTotalTime / totalCount)));
+            log.info("最终结果 压缩 {} 次，平均耗时：{}", totalCount, TimeUtil.formatDuration(Duration.ofNanos(encodeTotalTime / totalCount)));
+            log.info("最终结果 解压 {} 次，平均耗时：{}", totalCount, TimeUtil.formatDuration(Duration.ofNanos(decodeTotalTime / totalCount)));
 
 
         }
