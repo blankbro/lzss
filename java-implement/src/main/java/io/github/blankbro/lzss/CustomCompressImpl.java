@@ -68,7 +68,7 @@ public class CustomCompressImpl {
      * @return
      */
     public static byte[] decode(byte[] encodeDataBytes, int singleDataPackageByteLength, int bytePositionByteLength) {
-        int dataPackageCount = bytePositionByteLength * 8 / singleDataPackageByteLength;
+        int dataPackageCount = bytePositionByteLength * Byte.SIZE / singleDataPackageByteLength;
         int otherDataPackageByteLength = (dataPackageCount - 1) * singleDataPackageByteLength;
 
         byte[] originDataBytes = new byte[singleDataPackageByteLength + otherDataPackageByteLength];
