@@ -1,4 +1,4 @@
-package io.github.blankbro.lzss;
+package io.github.blankbro.lzss.util;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;

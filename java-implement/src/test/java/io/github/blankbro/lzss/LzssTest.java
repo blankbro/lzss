@@ -1,5 +1,6 @@
 package io.github.blankbro.lzss;
 
+import io.github.blankbro.lzss.util.TimeUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 
