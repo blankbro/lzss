@@ -29,7 +29,6 @@ public class CustomCompressImpl {
         // 拷贝一份进行操作
         originDataBytes = Arrays.copyOf(originDataBytes, originDataBytes.length);
 
-
         byte[] bytePositions = new byte[bytePositionByteLength];
         byte[] encodeDataBytes = new byte[originDataBytes.length * 2];
 
@@ -87,7 +86,6 @@ public class CustomCompressImpl {
             }
             encodeDataBytes[singleDataPackageByteLength + i / Byte.SIZE] <<= 1;
         }
-
 
         return originDataBytes;
     }

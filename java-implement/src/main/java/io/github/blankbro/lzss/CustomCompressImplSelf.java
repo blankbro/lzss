@@ -73,16 +73,16 @@ public class CustomCompressImplSelf {
             bitMask = INIT_BIT_MASK;
         }
 
-        byte[] encodeBytes = new byte[singleDataPackageByteLength + bytePositions.length + unzeroByteList.size()];
+        byte[] encodeBytes = new byte[singleDataPackageByteLength + bytePositionByteLength + unzeroByteList.size()];
         // 拷贝第一包数据
         System.arraycopy(originDataBytes, 0, encodeBytes, 0, singleDataPackageByteLength);
         // 填充 0和非0字节 对应的bit位置
-        for (int i = 0; i < bytePositions.length; i++) {
+        for (int i = 0; i < bytePositionByteLength; i++) {
             encodeBytes[singleDataPackageByteLength + i] = bytePositions[i];
         }
         // 填充非0的字节
         for (int i = 0; i < unzeroByteList.size(); i++) {
-            encodeBytes[singleDataPackageByteLength + bytePositions.length + i] = unzeroByteList.get(i);
+            encodeBytes[singleDataPackageByteLength + bytePositionByteLength + i] = unzeroByteList.get(i);
         }
 
         // log.info("{}/{} = {}%", encodeBytes.length + 2 + 2, originByteArray.length, (encodeBytes.length + 2 + 2) * 100.0 / originByteArray.length);
