@@ -92,7 +92,8 @@ public class CustomCompressImplSelf {
     public static byte[] decode(byte[] encodeDataBytes, int singleDataPackageByteLength, int bytePositionByteLength) {
 
         // 解压第二包之后的数据
-        List<Byte> afterFirstPackageByteList = new ArrayList<>();
+        int otherDataPackageByteIndex = 0;
+        byte[] otherDataPackageBytes = new byte[bytePositionByteLength * Byte.SIZE];
         int unzeroByteIndex = 0;
         int INIT_BIT_MASK = 0b1000_0000;
         int bitMask;
@@ -101,9 +102,9 @@ public class CustomCompressImplSelf {
             byte byteBitPosition = encodeDataBytes[singleDataPackageByteLength + bytePositionIndex];
             while (bitMask != 0) {
                 if ((byteBitPosition & bitMask) == 0) {
-                    afterFirstPackageByteList.add((byte) 0);
+                    otherDataPackageBytes[otherDataPackageByteIndex++] = 0;
                 } else {
-                    afterFirstPackageByteList.add(encodeDataBytes[singleDataPackageByteLength + bytePositionByteLength + unzeroByteIndex]);
+                    otherDataPackageBytes[otherDataPackageByteIndex++] = encodeDataBytes[singleDataPackageByteLength + bytePositionByteLength + unzeroByteIndex];
                     unzeroByteIndex++;
                 }
                 bitMask >>= 1;
@@ -111,21 +112,21 @@ public class CustomCompressImplSelf {
         }
 
         // 计算确切的数据包的数量（ byteBitPosition 最后可能有几个多余的0，通过 / 运算就可以把他们省略掉了）
-        int packageCount = afterFirstPackageByteList.size() / singleDataPackageByteLength;
-        byte[] decodeResult = new byte[packageCount * singleDataPackageByteLength];
+        int packageCount = otherDataPackageBytes.length / singleDataPackageByteLength;
+        byte[] originDataBytes = new byte[packageCount * singleDataPackageByteLength];
 
         // 填充第一包
-        System.arraycopy(encodeDataBytes, 0, decodeResult, 0, singleDataPackageByteLength);
+        System.arraycopy(encodeDataBytes, 0, originDataBytes, 0, singleDataPackageByteLength);
 
         // 填充第二包及之后的数据
         for (int packageNumber = 1; packageNumber < packageCount; packageNumber++) {
             for (int packageIndex = 0; packageIndex < singleDataPackageByteLength; packageIndex++) {
-                decodeResult[packageNumber * singleDataPackageByteLength + packageIndex] =
-                        (byte) (decodeResult[(packageNumber - 1) * singleDataPackageByteLength + packageIndex] ^ afterFirstPackageByteList.get((packageNumber - 1) * singleDataPackageByteLength + packageIndex));
+                originDataBytes[packageNumber * singleDataPackageByteLength + packageIndex] =
+                        (byte) (originDataBytes[(packageNumber - 1) * singleDataPackageByteLength + packageIndex] ^ otherDataPackageBytes[(packageNumber - 1) * singleDataPackageByteLength + packageIndex]);
             }
         }
 
-        return decodeResult;
+        return originDataBytes;
     }
 
 }

@@ -30,7 +30,7 @@ public class CustomCompressImplSelfTest {
 
         long encodeTotalTime = 0;
         long decodeTotalTime = 0;
-        long totalCount = 1;
+        long totalCount = 10;
 
         for (int i = 0; i < totalCount; i++) {
             int singleDataPackageByteLength = 51;
