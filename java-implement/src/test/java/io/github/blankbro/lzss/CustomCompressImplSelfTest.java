@@ -33,26 +33,28 @@ public class CustomCompressImplSelfTest {
         long totalCount = 1;
 
         for (int i = 0; i < totalCount; i++) {
+            int singleDataPackageByteLength = 51;
+            int bytePositionByteLength = 60;
+
             long start = System.nanoTime();
-            CustomCompressImplSelf.EncodeResult encodeResult = CustomCompressImplSelf.encode(byteArr, 51);
+            byte[] encodeBytes = CustomCompressImplSelf.encode(byteArr, singleDataPackageByteLength, bytePositionByteLength);
             long end = System.nanoTime();
             long encodeHandleTime = end - start;
             encodeTotalTime += encodeHandleTime;
 
             start = System.nanoTime();
-            byte[] decodeResult = CustomCompressImplSelf.decode(encodeResult);
+            byte[] decodeBytes = CustomCompressImplSelf.decode(encodeBytes, singleDataPackageByteLength, bytePositionByteLength);
             end = System.nanoTime();
             long decodeHandleTime = end - start;
             decodeTotalTime += decodeHandleTime;
 
-            for (int j = 0; j < decodeResult.length; j++) {
-                if (byteArr[j] != decodeResult[j]) {
+            for (int j = 0; j < decodeBytes.length; j++) {
+                if (byteArr[j] != decodeBytes[j]) {
                     System.out.println("解压不一致");
                     break;
                 }
             }
 
-            byte[] encodeBytes = encodeResult.getBytes();
             log.info("=========>>>");
             log.info("originByteArray:  {} bytes", byteArr.length);
             log.info("encodeByteArray:  {} bytes ({}%)", encodeBytes.length, encodeBytes.length * 100.0 / byteArr.length);

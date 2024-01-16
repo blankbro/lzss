@@ -17,9 +17,6 @@ public class CustomCompressImpl {
             throw new RuntimeException("originDataBytes.length % singleDataPackageByteLength != 0");
         }
 
-        // 拷贝一份进行操作
-        originDataBytes = Arrays.copyOf(originDataBytes, originDataBytes.length);
-
         int dataPackageCount = originDataBytes.length / singleDataPackageByteLength;
         int otherDataPackageByteLength = originDataBytes.length - singleDataPackageByteLength;
         int minBytePositionByteLength = otherDataPackageByteLength / Byte.SIZE + (otherDataPackageByteLength % Byte.SIZE);
@@ -28,6 +25,10 @@ public class CustomCompressImpl {
         } else if (bytePositionByteLength < minBytePositionByteLength) {
             throw new RuntimeException("bytePositionByteLength < minBytePositionByteLength");
         }
+
+        // 拷贝一份进行操作
+        originDataBytes = Arrays.copyOf(originDataBytes, originDataBytes.length);
+
 
         byte[] bytePositions = new byte[bytePositionByteLength];
         byte[] encodeDataBytes = new byte[originDataBytes.length * 2];
