@@ -10,7 +10,7 @@ import java.time.Duration;
 public class CustomCompressImplTest {
 
     @Test
-    public void test202401151734() {
+    public void test202401151734() throws InterruptedException {
         int[] intArr = {0x00, 0x35, 0x00, 0x02, 0x23, 0x24, 0x14, 0x0F, 0x48, 0xA1, 0x52, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x0D, 0x0F, 0x64, 0x0F, 0x6F, 0x0F, 0x6D, 0x0F, 0x6F, 0x0F, 0x71, 0x0F, 0x6D, 0x0F, 0x6E, 0x0F, 0x73, 0x0F, 0x6D, 0x0F, 0x6F, 0x0F, 0x72, 0x0F, 0x6D, 0x0F, 0x6C, 0x03, 0x4E, 0x4F, 0x4F,
                 0x00, 0x35, 0x00, 0x02, 0x23, 0x24, 0x14, 0x12, 0x49, 0x0C, 0x52, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x0D, 0x0F, 0x68, 0x0F, 0x73, 0x0F, 0x6F, 0x0F, 0x73, 0x0F, 0x73, 0x0F, 0x6F, 0x0F, 0x73, 0x0F, 0x77, 0x0F, 0x6F, 0x0F, 0x73, 0x0F, 0x76, 0x0F, 0x6F, 0x0F, 0x6E, 0x03, 0x4E, 0x4F, 0x4F,
                 0x00, 0x35, 0x00, 0x02, 0x23, 0x24, 0x14, 0x18, 0x49, 0x77, 0x52, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x0D, 0x0F, 0x6D, 0x0F, 0x77, 0x0F, 0x73, 0x0F, 0x77, 0x0F, 0x77, 0x0F, 0x74, 0x0F, 0x76, 0x0F, 0x79, 0x0F, 0x74, 0x0F, 0x77, 0x0F, 0x79, 0x0F, 0x73, 0x0F, 0x73, 0x03, 0x4E, 0x4F, 0x4F,
@@ -26,32 +26,45 @@ public class CustomCompressImplTest {
             byteArr[i] = (byte) intArr[i];
         }
 
-        int singleDataPackageByteLength = 51;
-        int bytePositionByteLength = 60;
+        long encodeTotalTime = 0;
+        long decodeTotalTime = 0;
+        long totalCount = 10;
 
-        long start = System.nanoTime();
-        byte[] encodeBytes = CustomCompressImpl.encode(byteArr, singleDataPackageByteLength, bytePositionByteLength);
-        long end = System.nanoTime();
-        long encodeHandleTime = end - start;
+        for (int i = 0; i < totalCount; i++) {
+            int singleDataPackageByteLength = 51;
+            int bytePositionByteLength = 60;
 
-        start = System.nanoTime();
-        byte[] decodeBytes = CustomCompressImpl.decode(encodeBytes, singleDataPackageByteLength, bytePositionByteLength);
-        end = System.nanoTime();
-        long decodeHandleTime = end - start;
+            long start = System.nanoTime();
+            byte[] encodeBytes = CustomCompressImpl.encode(byteArr, singleDataPackageByteLength, bytePositionByteLength);
+            long end = System.nanoTime();
+            long encodeHandleTime = end - start;
+            encodeTotalTime += encodeHandleTime;
 
-        for (int j = 0; j < decodeBytes.length; j++) {
-            if (byteArr[j] != decodeBytes[j]) {
-                System.out.println("解压不一致");
-                break;
+            start = System.nanoTime();
+            byte[] decodeBytes = CustomCompressImpl.decode(encodeBytes, singleDataPackageByteLength, bytePositionByteLength);
+            end = System.nanoTime();
+            long decodeHandleTime = end - start;
+            decodeTotalTime += decodeHandleTime;
+
+            for (int j = 0; j < decodeBytes.length; j++) {
+                if (byteArr[j] != decodeBytes[j]) {
+                    System.out.println("解压不一致");
+                    break;
+                }
             }
+
+            log.info("=========>>>");
+            log.info("originByteArray:  {} bytes", byteArr.length);
+            log.info("encodeByteArray:  {} bytes ({}%)", encodeBytes.length, encodeBytes.length * 100.0 / byteArr.length);
+            log.info("encodeByteArray + 2 + 2:  {} bytes ({}%)", encodeBytes.length + 4, (encodeBytes.length + 4) * 100.0 / byteArr.length);
+            log.info("压缩耗时：{}", TimeUtil.formatDuration(Duration.ofNanos(encodeHandleTime)));
+            log.info("解压耗时：{}", TimeUtil.formatDuration(Duration.ofNanos(decodeHandleTime)));
+
+            Thread.sleep(1000);
         }
 
-        log.info("=========>>>");
-        log.info("originByteArray:  {} bytes", byteArr.length);
-        log.info("encodeByteArray:  {} bytes ({}%)", encodeBytes.length, encodeBytes.length * 100.0 / byteArr.length);
-        log.info("encodeByteArray + 2 + 2:  {} bytes ({}%)", encodeBytes.length + 4, (encodeBytes.length + 4) * 100.0 / byteArr.length);
-        log.info("压缩耗时：{}", TimeUtil.formatDuration(Duration.ofNanos(encodeHandleTime)));
-        log.info("解压耗时：{}", TimeUtil.formatDuration(Duration.ofNanos(decodeHandleTime)));
-
+        log.info("最终结果 压缩 {} 次，平均耗时：{}", totalCount, TimeUtil.formatDuration(Duration.ofNanos(encodeTotalTime / totalCount)));
+        log.info("最终结果 解压 {} 次，平均耗时：{}", totalCount, TimeUtil.formatDuration(Duration.ofNanos(decodeTotalTime / totalCount)));
     }
+
 }
