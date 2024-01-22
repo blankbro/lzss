@@ -116,7 +116,7 @@ public class Lzss {
                     }
                 }
             }
-            if (y <= 1) {
+            if (y <= P) {
                 y = 1;
                 encodeBuffer.output1(c);
             } else {

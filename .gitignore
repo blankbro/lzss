@@ -4,3 +4,4 @@ test/_output.txt
 test/_output_output.txt
 /**/.idea
 /**/target
+/**/test-data
