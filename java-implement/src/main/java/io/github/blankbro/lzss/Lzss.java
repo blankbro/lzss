@@ -35,16 +35,16 @@ import java.util.List;
  */
 @Slf4j
 public class Lzss {
-    // 匹配字符串在缓冲区中位置，需要的位数
-    private static final int MATCH_INDEX_BITS = 6; // typically 10..13
-    // 匹配字符串的长度，需要的位数
-    private static final int MATCH_LENGTH_BITS = 3;  // typically 4..5
-    // 匹配字符串在缓冲区中位置的最大值
-    private static final int MAX_MATCH_INDEX = (1 << MATCH_INDEX_BITS);  // buffer size
-    // 匹配字符串长度的最大值
-    private static final int MAX_MATCH_LENGTH = ((1 << MATCH_LENGTH_BITS) + 1);  // lookahead buffer size
-    // 搜索相同字符串的空间
-    private static final int SEARCH_SPACE_SIZE = MAX_MATCH_INDEX - MAX_MATCH_LENGTH;  // space buffer size
+    // 滑动窗口长度，需要的位数
+    private static final int WINDOW_SIZE_BITS = 6; // typically 10..13
+    // 匹配字符串的最大长度，需要的位数
+    private static final int MAX_MATCH_LENGTH_BITS = 3;  // typically 4..5
+    // 滑动窗口长度
+    private static final int WINDOW_SIZE = (1 << WINDOW_SIZE_BITS);
+    // 最大匹配字符串的长度
+    private static final int MAX_MATCH_LENGTH = ((1 << MAX_MATCH_LENGTH_BITS) + 1);  // lookahead buffer size
+    // 搜索字符串的空间大小
+    private static final int SEARCH_WINDOW_SIZE = WINDOW_SIZE - MAX_MATCH_LENGTH;
 
     private static class EncodeBuffer {
         static final int INIT_BIT_BUFFER = 0;
@@ -88,7 +88,7 @@ public class Lzss {
 
         private void output2(int matchIndex, int matchLength) {
             this.putBit0();
-            int mask = MAX_MATCH_INDEX;
+            int mask = WINDOW_SIZE;
             while ((mask >>= 1) != 0) {
                 if ((matchIndex & mask) != 0) {
                     this.putBit1();
@@ -96,7 +96,7 @@ public class Lzss {
                     this.putBit0();
                 }
             }
-            mask = (1 << MATCH_LENGTH_BITS);
+            mask = (1 << MAX_MATCH_LENGTH_BITS);
             while ((mask >>= 1) != 0) {
                 if ((matchLength & mask) != 0) {
                     this.putBit1();
@@ -116,7 +116,7 @@ public class Lzss {
     }
 
     public static byte[] encode(byte[] originByteArray) {
-        byte[] buffer = new byte[MAX_MATCH_INDEX * 2];
+        byte[] buffer = new byte[WINDOW_SIZE * 2];
         // 缓存区中当前有效字节的最终位置
         int bufferEndIndex = 0;
         // 原始数据当前索引
@@ -124,7 +124,7 @@ public class Lzss {
 
         // 初始化窗口
         while (bufferEndIndex < buffer.length) {
-            if (bufferEndIndex < SEARCH_SPACE_SIZE) {
+            if (bufferEndIndex < SEARCH_WINDOW_SIZE) {
                 buffer[bufferEndIndex++] = ' ';
             } else if (originByteArrayIndex < originByteArray.length) {
                 buffer[bufferEndIndex++] = originByteArray[originByteArrayIndex++];
@@ -135,22 +135,22 @@ public class Lzss {
 
         EncodeBuffer encodeBuffer = new EncodeBuffer(originByteArray.length * 2);
         // 缓冲区中当前搜索匹配的位置
-        int currentIndex = SEARCH_SPACE_SIZE;
+        int currentIndex = SEARCH_WINDOW_SIZE;
         // 缓冲区中开始搜索的位置
         int searchStartIndex = 0;
         while (currentIndex < bufferEndIndex) {
             // 当前最大可匹配的长度
-            int maxCanMatchLength = Math.min(MAX_MATCH_LENGTH, bufferEndIndex - currentIndex);
+            int maxMatchableLength = Math.min(MAX_MATCH_LENGTH, bufferEndIndex - currentIndex);
             // 匹配字符串在缓冲区中的位置
             int matchIndex = 0;
             // 匹配字符串的长度
             int matchLength = 1;
-            // 当前处理的字符
-            int currentChar = buffer[currentIndex];
+            // 当前处理的字节
+            int currentByte = buffer[currentIndex];
             for (int i = currentIndex - 1; i >= searchStartIndex; i--) {
-                if (currentChar == buffer[i]) {
+                if (currentByte == buffer[i]) {
                     int j;
-                    for (j = 1; j < maxCanMatchLength; j++) {
+                    for (j = 1; j < maxMatchableLength; j++) {
                         if (buffer[i + j] != buffer[currentIndex + j]) break;
                     }
                     if (j > matchLength) {
@@ -161,19 +161,19 @@ public class Lzss {
             }
             if (matchLength <= 1) {
                 matchLength = 1;
-                encodeBuffer.output1(currentChar);
+                encodeBuffer.output1(currentByte);
             } else {
-                encodeBuffer.output2(matchIndex & (MAX_MATCH_INDEX - 1), matchLength - 2);
+                encodeBuffer.output2(matchIndex & (WINDOW_SIZE - 1), matchLength - 2);
             }
             currentIndex += matchLength;
             searchStartIndex += matchLength;
             // 移动窗口
-            if (currentIndex >= MAX_MATCH_INDEX * 2 - MAX_MATCH_LENGTH) {
-                for (int i = 0; i < MAX_MATCH_INDEX; i++) buffer[i] = buffer[i + MAX_MATCH_INDEX];
-                bufferEndIndex -= MAX_MATCH_INDEX;
-                currentIndex -= MAX_MATCH_INDEX;
-                searchStartIndex -= MAX_MATCH_INDEX;
-                while (bufferEndIndex < MAX_MATCH_INDEX * 2) {
+            if (currentIndex >= WINDOW_SIZE * 2 - MAX_MATCH_LENGTH) {
+                for (int i = 0; i < WINDOW_SIZE; i++) buffer[i] = buffer[i + WINDOW_SIZE];
+                bufferEndIndex -= WINDOW_SIZE;
+                currentIndex -= WINDOW_SIZE;
+                searchStartIndex -= WINDOW_SIZE;
+                while (bufferEndIndex < WINDOW_SIZE * 2) {
                     if (originByteArrayIndex >= originByteArray.length) break;
                     buffer[bufferEndIndex++] = originByteArray[originByteArrayIndex++];
                 }
@@ -230,10 +230,10 @@ public class Lzss {
     }
 
     public static byte[] decode(byte[] encodeByteArray) {
-        byte[] buffer = new byte[MAX_MATCH_INDEX * 2];
+        byte[] buffer = new byte[WINDOW_SIZE * 2];
 
-        for (int i = 0; i < SEARCH_SPACE_SIZE; i++) buffer[i] = ' ';
-        int r = SEARCH_SPACE_SIZE;
+        for (int i = 0; i < SEARCH_WINDOW_SIZE; i++) buffer[i] = ' ';
+        int r = SEARCH_WINDOW_SIZE;
 
         DecodeBuffer decodeBuffer = new DecodeBuffer(encodeByteArray);
 
@@ -243,16 +243,16 @@ public class Lzss {
                 if ((c = decodeBuffer.getbit(8)) == DecodeBuffer.EOF) break;
                 decodeBuffer.appendDecodeByte((byte) c);
                 buffer[r++] = (byte) c;
-                r &= (MAX_MATCH_INDEX - 1);
+                r &= (WINDOW_SIZE - 1);
             } else {
                 int i, j;
-                if ((i = decodeBuffer.getbit(MATCH_INDEX_BITS)) == DecodeBuffer.EOF) break;
-                if ((j = decodeBuffer.getbit(MATCH_LENGTH_BITS)) == DecodeBuffer.EOF) break;
+                if ((i = decodeBuffer.getbit(WINDOW_SIZE_BITS)) == DecodeBuffer.EOF) break;
+                if ((j = decodeBuffer.getbit(MAX_MATCH_LENGTH_BITS)) == DecodeBuffer.EOF) break;
                 for (int k = 0; k <= j + 1; k++) {
-                    c = buffer[(i + k) & (MAX_MATCH_INDEX - 1)];
+                    c = buffer[(i + k) & (WINDOW_SIZE - 1)];
                     decodeBuffer.appendDecodeByte((byte) c);
                     buffer[r++] = (byte) c;
-                    r &= (MAX_MATCH_INDEX - 1);
+                    r &= (WINDOW_SIZE - 1);
                 }
             }
         }
