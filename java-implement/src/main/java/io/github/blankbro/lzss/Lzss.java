@@ -5,13 +5,46 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 此例是Dr. Seuss所著《Green Eggs and Ham》的开头，每行开头的已有字符总数是为方便所设。
+ *   0: I am Sam
+ *   9:
+ *  10: Sam I am
+ *  19:
+ *  20: That Sam-I-am!
+ *  35: That Sam-I-am!
+ *  50: I do not like
+ *  64: that Sam-I-am!
+ *  79:
+ *  80: Do you like green eggs and ham?
+ * 112:
+ * 113: I do not like them, Sam-I-am.
+ * 143: I do not like green eggs and ham.
+ * <p>
+ * 这是该段文本在未压缩形式的177字节。假设盈亏平衡点是2字节（并因此是2字节的指针/偏移对），那么加上一字节的新行字符，此文本使用LZSS压缩后将变为94字节：
+ *  0: I am Sam
+ *  9:
+ * 10: (5,3) (0,4)
+ * 16:
+ * 17: That(4,4)-I-am!(19,16)I do not like
+ * 45: t(21,14)
+ * 49: Do you(58,5) green eggs and ham?
+ * 78: (49,14) them,(24,9).(112,15)(93,18).
+ * <p>
+ * 详情请看<a href="https://zh.wikipedia.org/wiki/LZSS">维基百科LZSS</a>
+ */
 @Slf4j
 public class Lzss {
-    private static final int EI = 6; // typically 10..13
-    private static final int EJ = 3;  // typically 4..5
-    private static final int P = 1;   // If match length <= P then output one character
-    private static final int BUFFER_SIZE = (1 << EI);  // buffer size
-    private static final int LOOKAHEAD_BUFFER_SIZE = ((1 << EJ) + 1);  // lookahead buffer size
+    // 索引需要的位数
+    private static final int INDEX_BITS = 6; // typically 10..13
+    // 长度需要的位数
+    private static final int LENGTH_BITS = 3;  // typically 4..5
+    // 匹配长度阈值
+    private static final int MATCH_LENGTH_THRESHOLD = 1;   // If match length <= MATCH_LENGTH_THRESHOLD then output one character
+    // 缓冲区大小
+    private static final int BUFFER_SIZE = (1 << INDEX_BITS);  // buffer size
+    // 前瞻缓冲区大小
+    private static final int LOOKAHEAD_BUFFER_SIZE = ((1 << LENGTH_BITS) + 1);  // lookahead buffer size
     private static final int SPACE_BUFFER_SIZE = BUFFER_SIZE - LOOKAHEAD_BUFFER_SIZE;  // space buffer size
 
     private static class EncodeBuffer {
@@ -51,10 +84,8 @@ public class Lzss {
         }
 
         private void output2(int x, int y) {
-            int mask;
-
             this.putBit0();
-            mask = BUFFER_SIZE;
+            int mask = BUFFER_SIZE;
             while ((mask >>= 1) != 0) {
                 if ((x & mask) != 0) {
                     this.putBit1();
@@ -62,7 +93,7 @@ public class Lzss {
                     this.putBit0();
                 }
             }
-            mask = (1 << EJ);
+            mask = (1 << LENGTH_BITS);
             while ((mask >>= 1) != 0) {
                 if ((y & mask) != 0) {
                     this.putBit1();
@@ -85,7 +116,8 @@ public class Lzss {
         byte[] buffer = new byte[BUFFER_SIZE * 2];
         int bufferIndex = 0;
         int originByteArrayIndex = 0;
-        while (bufferIndex < BUFFER_SIZE * 2) {
+        // 构建初始滑动窗口 [SPACE..., originByte...]
+        while (bufferIndex < buffer.length) {
             if (bufferIndex < SPACE_BUFFER_SIZE) {
                 buffer[bufferIndex++] = ' ';
             } else if (originByteArrayIndex < originByteArray.length) {
@@ -96,44 +128,51 @@ public class Lzss {
         }
 
         EncodeBuffer encodeBuffer = new EncodeBuffer();
-        int bufferEnd = bufferIndex;
-        int r = SPACE_BUFFER_SIZE;
-        int s = 0;
-        while (r < bufferEnd) {
-            int f1 = Math.min(LOOKAHEAD_BUFFER_SIZE, bufferEnd - r);
-            int x = 0;
-            int y = 1;
-            int c = buffer[r];
-            for (int i = r - 1; i >= s; i--) {
-                if (buffer[i] == c) {
+        int bufferEndIndex = bufferIndex;
+        // 缓冲区中当前搜索匹配的位置
+        int currentProcessIndex = SPACE_BUFFER_SIZE;
+        // 缓冲区中开始搜索的位置
+        int searchStartIndex = 0;
+        while (currentProcessIndex < bufferEndIndex) {
+            // 前瞻缓冲区可用长度
+            int lookaheadBufferValidLength = Math.min(LOOKAHEAD_BUFFER_SIZE, bufferEndIndex - currentProcessIndex);
+            // 匹配字符串在缓冲区中的位置
+            int matchStartIndex = 0;
+            // 匹配字符串的长度
+            int matchLength = 1;
+            // 当前处理的字符
+            int currentChar = buffer[currentProcessIndex];
+            for (int i = currentProcessIndex - 1; i >= searchStartIndex; i--) {
+                if (buffer[i] == currentChar) {
                     int j;
-                    for (j = 1; j < f1; j++) {
-                        if (buffer[i + j] != buffer[r + j]) break;
+                    for (j = 1; j < lookaheadBufferValidLength; j++) {
+                        if (buffer[i + j] != buffer[currentProcessIndex + j]) break;
                     }
-                    if (j > y) {
-                        x = i;
-                        y = j;
+                    if (j > matchLength) {
+                        matchStartIndex = i;
+                        matchLength = j;
                     }
                 }
             }
-            if (y <= P) {
-                y = 1;
-                encodeBuffer.output1(c);
+            if (matchLength <= MATCH_LENGTH_THRESHOLD) {
+                matchLength = 1;
+                encodeBuffer.output1(currentChar);
             } else {
-                encodeBuffer.output2(x & (BUFFER_SIZE - 1), y - 2);
+                encodeBuffer.output2(matchStartIndex & (BUFFER_SIZE - 1), matchLength - 2);
             }
-            r += y;
-            s += y;
-            if (r >= BUFFER_SIZE * 2 - LOOKAHEAD_BUFFER_SIZE) {
+            currentProcessIndex += matchLength;
+            searchStartIndex += matchLength;
+            // 移动窗口
+            if (currentProcessIndex >= BUFFER_SIZE * 2 - LOOKAHEAD_BUFFER_SIZE) {
                 for (int i = 0; i < BUFFER_SIZE; i++) buffer[i] = buffer[i + BUFFER_SIZE];
-                bufferEnd -= BUFFER_SIZE;
-                r -= BUFFER_SIZE;
-                s -= BUFFER_SIZE;
-                while (bufferEnd < BUFFER_SIZE * 2) {
+                bufferEndIndex -= BUFFER_SIZE;
+                currentProcessIndex -= BUFFER_SIZE;
+                searchStartIndex -= BUFFER_SIZE;
+                while (bufferEndIndex < BUFFER_SIZE * 2) {
                     if (originByteArrayIndex >= originByteArray.length) {
                         break;
                     }
-                    buffer[bufferEnd++] = originByteArray[originByteArrayIndex++];
+                    buffer[bufferEndIndex++] = originByteArray[originByteArrayIndex++];
                 }
             }
         }
@@ -204,8 +243,8 @@ public class Lzss {
                 r &= (BUFFER_SIZE - 1);
             } else {
                 int i, j, k;
-                if ((i = decodeBuffer.getbit(EI)) == DecodeBuffer.EOF) break;
-                if ((j = decodeBuffer.getbit(EJ)) == DecodeBuffer.EOF) break;
+                if ((i = decodeBuffer.getbit(INDEX_BITS)) == DecodeBuffer.EOF) break;
+                if ((j = decodeBuffer.getbit(LENGTH_BITS)) == DecodeBuffer.EOF) break;
                 for (k = 0; k <= j + 1; k++) {
                     c = buffer[(i + k) & (BUFFER_SIZE - 1)];
                     decodeBuffer.appendDecodeByte((byte) c);
