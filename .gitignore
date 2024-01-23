@@ -1,7 +1,7 @@
 /cmake-build-debug
-test/_internal.txt
-test/_output.txt
-test/_output_output.txt
+lzss-c/test/_internal.txt
+lzss-c/test/_output.txt
+lzss-c/test/_output_output.txt
 /**/.idea
 /**/target
 /**/test-data
