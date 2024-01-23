@@ -15,7 +15,6 @@
 
 - 直接对字节数组进行压缩和解压，而不是文件
 - 允许方法同一时间多次调用：移除共享变量，新增 EncodeBuffer、DecodeBuffer 等结构
-
 - [单元测试](lzss-c/test/myimplement_lzss_test.c)新增十六进制字符串和字节数组相互转换
 
 ### [Java实现](lzss-java/src/main/java/io/github/blankbro/lzss/Lzss.java)
