@@ -9,7 +9,7 @@
 - 实现了文件的压缩和解压
 - 为参考项目添加了[单元测试](lzss-c/test/reference_lzss_test.c)
 
-### [我的C语言实现](lzss-c/myimplement/lzss.c)
+### [C语言实现](lzss-c/myimplement/lzss.c)
 
 基于参考项目稍微做了一些改造：
 
@@ -19,7 +19,7 @@
 
 - 单元测试新增十六进制字符串和字节数组相互转换
 
-### [我的Java实现](lzss-java/src/main/java/io/github/blankbro/lzss/Lzss.java)
+### [Java实现](lzss-java/src/main/java/io/github/blankbro/lzss/Lzss.java)
 
 基于C语言实现，改造成了Java实现
 
