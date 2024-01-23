@@ -68,7 +68,7 @@ public class LzssTest {
         caseList.put("hexString", ByteUtil.hexStringToByteArray("018D2EED773816AB11005700055D00303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303000E4D1"));
         List<Integer> generateBlockCaseList = Arrays.asList(255, 223, 200, 150, 132, 100, 80, 64, 56, 55, 50, 48, 32);
         for (Integer blockLength : generateBlockCaseList) {
-            // caseList.put("generate_" + blockLength, generate(255, blockLength));
+            caseList.put("generate_" + blockLength, generate(255, blockLength));
         }
         caseList.put("loadFromFile", loadFromFile());
         // caseList.put("custom", new byte[]{0x35,0x35,0x35,0x35,0x35,0x35,0x35,0x35,0x35,0x35});

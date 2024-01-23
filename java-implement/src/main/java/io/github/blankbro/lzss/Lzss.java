@@ -190,7 +190,6 @@ public class Lzss {
     }
 
     private static class DecodeBuffer {
-        private static final int EOF = -1;
         private static final int INIT_BIT_MASK = 1 << 7;
         private int bitBuffer;
         private int bitMask;
@@ -207,12 +206,12 @@ public class Lzss {
         }
 
         /* get n bits */
-        private int getbit(int n) {
+        private Integer getBit(int n) {
             int x = 0;
             for (int i = 0; i < n; i++) {
                 if (this.bitMask == 0) {
                     if (this.encodeBytesCurrIndex >= this.encodeBytes.length) {
-                        return EOF;
+                        return null;
                     }
                     this.bitBuffer = this.encodeBytes[this.encodeBytesCurrIndex++];
                     this.bitMask = INIT_BIT_MASK;
@@ -230,29 +229,30 @@ public class Lzss {
     }
 
     public static byte[] decode(byte[] encodeByteArray) {
-        byte[] buffer = new byte[WINDOW_SIZE * 2];
+        byte[] buffer = new byte[WINDOW_SIZE];
 
         for (int i = 0; i < SEARCH_WINDOW_SIZE; i++) buffer[i] = ' ';
-        int r = SEARCH_WINDOW_SIZE;
 
         DecodeBuffer decodeBuffer = new DecodeBuffer(encodeByteArray);
 
-        int c;
-        while ((c = decodeBuffer.getbit(1)) != DecodeBuffer.EOF) {
-            if (c != 0) {
-                if ((c = decodeBuffer.getbit(8)) == DecodeBuffer.EOF) break;
-                decodeBuffer.appendDecodeByte((byte) c);
-                buffer[r++] = (byte) c;
-                r &= (WINDOW_SIZE - 1);
+        int currentIndex = SEARCH_WINDOW_SIZE;
+        Integer flagBit, oneByte, matchIndex, matchLength;
+        while ((flagBit = decodeBuffer.getBit(1)) != null) {
+            if (flagBit != 0) {
+                // 取 one byte
+                if ((oneByte = decodeBuffer.getBit(8)) == null) break;
+                decodeBuffer.appendDecodeByte(oneByte.byteValue());
+                buffer[currentIndex++] = oneByte.byteValue();
+                currentIndex &= (WINDOW_SIZE - 1);
             } else {
-                int i, j;
-                if ((i = decodeBuffer.getbit(WINDOW_SIZE_BITS)) == DecodeBuffer.EOF) break;
-                if ((j = decodeBuffer.getbit(MAX_MATCH_LENGTH_BITS)) == DecodeBuffer.EOF) break;
-                for (int k = 0; k <= j + 1; k++) {
-                    c = buffer[(i + k) & (WINDOW_SIZE - 1)];
-                    decodeBuffer.appendDecodeByte((byte) c);
-                    buffer[r++] = (byte) c;
-                    r &= (WINDOW_SIZE - 1);
+                // 取 multi byte
+                if ((matchIndex = decodeBuffer.getBit(WINDOW_SIZE_BITS)) == null) break;
+                if ((matchLength = decodeBuffer.getBit(MAX_MATCH_LENGTH_BITS)) == null) break;
+                for (int i = 0; i <= matchLength + 1; i++) {
+                    byte matchByte = buffer[(matchIndex + i) & (WINDOW_SIZE - 1)];
+                    decodeBuffer.appendDecodeByte(matchByte);
+                    buffer[currentIndex++] = matchByte;
+                    currentIndex &= (WINDOW_SIZE - 1);
                 }
             }
         }
