@@ -1,5 +1,7 @@
 ## LZSS 算法实现
 
+![LZSS算法原理](https://raw.githubusercontent.com/blankbro/draw.io/master/LZSS算法原理.drawio.png)
+
 ### [参考项目](lzss-c/reference/lzss.c) 
 
 所有实现的参考项目, 源代码来自 [https://oku.edu.mie-u.ac.jp/~okumura/compression/lzss.c](https://oku.edu.mie-u.ac.jp/~okumura/compression/lzss.c)
