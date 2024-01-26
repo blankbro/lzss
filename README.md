@@ -41,6 +41,12 @@ Do you(58,5) green eggs and ham?
 
 ![LZSS算法原理](https://raw.githubusercontent.com/blankbro/draw.io/master/LZSS算法原理.drawio.png)
 
+LZSS 算法的压缩效果与多个因素有关：
+
+1. 原始数据重复数据越高，压缩效果可能越好，但重复的数据最好能在一个窗口内，否则起不到效果
+2. 重复数据的长度越长，压缩效果越好；如果重复数据都是单字节，那基本没有压缩效果
+3. 窗口越大更容易找重复数据，但是窗口占的bit也越多
+
 ### [参考项目](lzss-c/reference/lzss.c) 
 
 所有实现的参考项目, 源代码来自 [https://oku.edu.mie-u.ac.jp/~okumura/compression/lzss.c](https://oku.edu.mie-u.ac.jp/~okumura/compression/lzss.c)
