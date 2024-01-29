@@ -19,7 +19,7 @@ public class CustomCompressImpl {
 
         int dataPackageCount = originDataBytes.length / singleDataPackageByteLength;
         int otherDataPackageByteLength = originDataBytes.length - singleDataPackageByteLength;
-        int minBytePositionByteLength = otherDataPackageByteLength / Byte.SIZE + (otherDataPackageByteLength % Byte.SIZE);
+        int minBytePositionByteLength = otherDataPackageByteLength / Byte.SIZE + (otherDataPackageByteLength % Byte.SIZE == 0 ? 0 : 1);
         if (bytePositionByteLength == null) {
             bytePositionByteLength = minBytePositionByteLength;
         } else if (bytePositionByteLength < minBytePositionByteLength) {
