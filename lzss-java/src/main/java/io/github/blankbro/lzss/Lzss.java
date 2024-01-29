@@ -36,9 +36,9 @@ import java.util.List;
 @Slf4j
 public class Lzss {
     // 滑动窗口长度，需要的位数
-    private static final int WINDOW_SIZE_BITS = 6; // typically 10..13
+    private static final int WINDOW_SIZE_BITS = 10; // typically 10..13
     // 匹配字符串的最大长度，需要的位数
-    private static final int MAX_MATCH_LENGTH_BITS = 3;  // typically 4..5
+    private static final int MAX_MATCH_LENGTH_BITS = 4;  // typically 4..5
     // 滑动窗口长度
     private static final int WINDOW_SIZE = (1 << WINDOW_SIZE_BITS);
     // 最大匹配字符串的长度
