@@ -6,6 +6,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * 自定义压缩算法（我的实现）
+ * 限制：相同类型数据，相同数据长度
+ */
 @Slf4j
 public class CustomCompressImplSelf {
 

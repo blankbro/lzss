@@ -2,6 +2,10 @@ package io.github.blankbro.lzss;
 
 import java.util.Arrays;
 
+/**
+ * 自定义压缩算法
+ * 限制：相同类型数据，相同数据长度
+ */
 public class CustomCompressImpl {
 
     /**
