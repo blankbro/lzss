@@ -26,8 +26,8 @@ public class CustomCompressImpl2Test extends BaseTest {
                 log.info("=========>>> singleDataPackageByteLength is null, continue");
                 continue;
             }
-            if (caseInfo.noCompressionByteLength == null) {
-                log.info("=========>>> noCompressionByteLength is null, continue");
+            if (caseInfo.noCompressionByteLength == 0) {
+                log.info("=========>>> noCompressionByteLength is 0, continue");
                 continue;
             }
 
