@@ -19,9 +19,7 @@ public class LzssTest extends BaseTest {
 
         for (Map.Entry<String, CaseInfo> entry : caseList.entrySet()) {
             byte[] byteArr = entry.getValue().originBytes;
-            // FileOutputStream fos = new FileOutputStream(new File(entry.getKey()));
-            // fos.write(byteArr);
-            // fos.close();
+            // writeFile(entry.getKey(), byteArr);
             log.info("=========>>>{}", entry.getKey());
 
             long encodeTotalTime = 0;

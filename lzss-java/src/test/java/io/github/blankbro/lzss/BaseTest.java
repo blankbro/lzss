@@ -6,10 +6,7 @@ import io.github.blankbro.lzss.util.ByteUtil;
 import io.github.blankbro.lzss.util.FileUtil;
 import org.apache.commons.codec.DecoderException;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.*;
 
 public class BaseTest {
@@ -51,6 +48,12 @@ public class BaseTest {
             currentIndex += playload.length;
         }
         return result;
+    }
+
+    public void writeFile(String fileName, byte[] byteArr) throws IOException {
+        FileOutputStream fos = new FileOutputStream(fileName);
+        fos.write(byteArr);
+        fos.close();
     }
 
     public static class CaseInfo {
