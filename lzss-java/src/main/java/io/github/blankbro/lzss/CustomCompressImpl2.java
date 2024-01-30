@@ -83,6 +83,9 @@ public class CustomCompressImpl2 {
      * @return
      */
     public static byte[] decode(byte[] encodeDataBytes, int noCompressionByteLength, int singleDataPackageByteLength, int bytePositionByteLength) {
+        if (encodeDataBytes.length == noCompressionByteLength + singleDataPackageByteLength) {
+            return encodeDataBytes;
+        }
         int dataPackageCount = bytePositionByteLength * Byte.SIZE / singleDataPackageByteLength;
         int otherDataPackageByteLength = (dataPackageCount - 1) * singleDataPackageByteLength;
 

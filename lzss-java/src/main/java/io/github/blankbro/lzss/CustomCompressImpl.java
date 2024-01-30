@@ -17,6 +17,9 @@ public class CustomCompressImpl {
      * @return
      */
     public static byte[] encode(byte[] originDataBytes, int singleDataPackageByteLength, Integer bytePositionByteLength) {
+        if (originDataBytes.length == singleDataPackageByteLength) {
+            return originDataBytes;
+        }
         if (originDataBytes.length % singleDataPackageByteLength != 0) {
             throw new RuntimeException("originDataBytes.length % singleDataPackageByteLength != 0");
         }
@@ -72,6 +75,9 @@ public class CustomCompressImpl {
      * @return
      */
     public static byte[] decode(byte[] encodeDataBytes, int singleDataPackageByteLength, int bytePositionByteLength) {
+        if (encodeDataBytes.length == singleDataPackageByteLength) {
+            return encodeDataBytes;
+        }
         int dataPackageCount = bytePositionByteLength * Byte.SIZE / singleDataPackageByteLength;
         int otherDataPackageByteLength = (dataPackageCount - 1) * singleDataPackageByteLength;
 
